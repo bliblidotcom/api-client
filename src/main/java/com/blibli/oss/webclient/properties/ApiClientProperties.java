@@ -19,27 +19,27 @@ import java.util.Map;
 @ConfigurationProperties("api.client")
 public class ApiClientProperties {
 
-	public static final String DEFAULT = "default";
+  public static final String DEFAULT = "default";
 
-	private Map<String, ApiClientConfigProperties> configs = new HashMap<>();
+  private Map<String, ApiClientConfigProperties> configs = new HashMap<>();
 
-	@Data
-	@AllArgsConstructor
-	@NoArgsConstructor
-	public static class ApiClientConfigProperties {
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  public static class ApiClientConfigProperties {
 
-		private String url;
+    private String url;
 
-		@DurationUnit(ChronoUnit.MILLIS)
-		private Duration readTimeout = Duration.ofMillis(2000L);
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration readTimeout = Duration.ofMillis(2000L);
 
-		@DurationUnit(ChronoUnit.MILLIS)
-		private Duration connectTimeout = Duration.ofMillis(2000L);
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration connectTimeout = Duration.ofMillis(2000L);
 
-		private Map<String, String> headers = new HashMap<>();
+    private Map<String, String> headers = new HashMap<>();
 
-		private List<Class<?>> interceptors = new ArrayList<>();
+    private List<Class<?>> interceptors = new ArrayList<>();
 
-	}
+  }
 
 }

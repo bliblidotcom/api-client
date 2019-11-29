@@ -12,21 +12,21 @@ import org.springframework.stereotype.Component;
 @SpringBootApplication
 public class WebclientPluginApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(WebclientPluginApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(WebclientPluginApplication.class, args);
+  }
 
-	@Component
-	public class SampleCommandLineRunner implements CommandLineRunner {
+  @Component
+  public class SampleCommandLineRunner implements CommandLineRunner {
 
-		@Autowired
-		private ExampleClient exampleClient;
+    @Autowired
+    private ExampleClient exampleClient;
 
-		@Override
-		public void run(String... args) throws Exception {
-			String response = exampleClient.get().block();
-			System.out.println(response);
-		}
-	}
+    @Override
+    public void run(String... args) throws Exception {
+      String response = exampleClient.get().block();
+      System.out.println(response);
+    }
+  }
 
 }

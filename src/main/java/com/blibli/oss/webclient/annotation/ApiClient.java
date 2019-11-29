@@ -7,12 +7,12 @@ import java.lang.annotation.*;
 @Documented
 public @interface ApiClient {
 
-	String name();
+  String name();
 
-	String fallback() default "";
+  String fallback() default "";
 
-	String url() default "";
+  String url() default "";
 
-	boolean primary() default true;
+  boolean primary() default true;
 
 }

@@ -11,6 +11,6 @@ import java.lang.annotation.*;
 @Import(ApiClientConfiguration.class)
 public @interface EnableApiClient {
 
-	String[] basePackages() default {};
+  String[] basePackages() default {};
 
 }
