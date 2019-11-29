@@ -188,7 +188,7 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
             RequestParam annotation = parameter.getAnnotation(RequestParam.class);
             if (annotation != null) {
               String name = StringUtils.isEmpty(annotation.name()) ? annotation.value() : annotation.name();
-              if (StringUtils.isEmpty(name)) {
+              if (!StringUtils.isEmpty(name)) {
                 queryParamPosition.put(name, i);
               }
             }
@@ -212,7 +212,7 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
             RequestHeader annotation = parameter.getAnnotation(RequestHeader.class);
             if (annotation != null) {
               String name = StringUtils.isEmpty(annotation.name()) ? annotation.value() : annotation.name();
-              if (StringUtils.isEmpty(name)) {
+              if (!StringUtils.isEmpty(name)) {
                 headerParamPosition.put(name, i);
               }
             }
@@ -236,7 +236,7 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
             PathVariable annotation = parameter.getAnnotation(PathVariable.class);
             if (annotation != null) {
               String name = StringUtils.isEmpty(annotation.name()) ? annotation.value() : annotation.name();
-              if (StringUtils.isEmpty(name)) {
+              if (!StringUtils.isEmpty(name)) {
                 pathVariablePosition.put(name, i);
               }
             }

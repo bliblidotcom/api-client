@@ -37,7 +37,7 @@ public class WebclientPluginApplication {
         .build()).block();
       System.out.println(hookbinResponse);
 
-      hookbinResponse = hookbinClient.second().block();
+      hookbinResponse = hookbinClient.second("Eko", "Khannedy").block();
       System.out.println(hookbinResponse);
     }
   }

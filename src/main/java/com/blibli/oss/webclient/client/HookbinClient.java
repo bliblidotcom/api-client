@@ -6,9 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @ApiClient(
@@ -30,7 +28,8 @@ public interface HookbinClient {
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE
   )
-  Mono<HookbinResponse> second();
+  Mono<HookbinResponse> second(@RequestParam("firstName") String firstName,
+                               @RequestHeader("lastName") String lastName);
 
   @Data
   @Builder
