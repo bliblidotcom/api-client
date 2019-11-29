@@ -9,9 +9,7 @@ public @interface ApiClient {
 
   String name();
 
-  String fallback() default "";
-
-  String url() default "";
+  Class<?> fallback() default Void.class;
 
   boolean primary() default true;
 

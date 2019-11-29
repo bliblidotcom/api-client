@@ -1,6 +1,6 @@
 package com.blibli.oss.webclient.annotation;
 
-import com.blibli.oss.webclient.configuration.ApiClientConfiguration;
+import com.blibli.oss.webclient.configuration.ApiClientRegistrar;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
@@ -8,7 +8,7 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(ApiClientConfiguration.class)
+@Import(ApiClientRegistrar.class)
 public @interface EnableApiClient {
 
   String[] basePackages() default {};
