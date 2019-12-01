@@ -36,6 +36,9 @@ public class ApiClientProperties {
     @DurationUnit(ChronoUnit.MILLIS)
     private Duration connectTimeout = Duration.ofMillis(2000L);
 
+    @DurationUnit(ChronoUnit.MILLIS)
+    private Duration writeTimeout = Duration.ofMillis(2000L);
+
     private Map<String, String> headers = new HashMap<>();
 
     private List<Class<?>> interceptors = new ArrayList<>();

@@ -1,9 +1,15 @@
 package com.blibli.oss.webclient.bean;
 
+import com.blibli.oss.webclient.annotation.ApiClient;
 import com.blibli.oss.webclient.interceptor.ApiClientInterceptor;
 import com.blibli.oss.webclient.properties.ApiClientProperties;
+import com.blibli.oss.webclient.properties.PropertiesHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.beans.factory.BeanCreationException;
@@ -12,6 +18,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.util.MultiValueMap;
@@ -22,6 +29,8 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.tcp.TcpClient;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -31,15 +40,15 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class ApiClientMethodInterceptor implements MethodInterceptor, InitializingBean, ApplicationContextAware {
 
   @Setter
   private ApplicationContext applicationContext;
-
-  private WebClient webClient;
 
   @Setter
   private Class<?> type;
@@ -47,7 +56,11 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
   @Setter
   private String name;
 
+  private WebClient webClient;
+
   private Map<String, Method> methods;
+
+  private Object fallback;
 
   private Map<String, MultiValueMap<String, String>> headers = new HashMap<>();
 
@@ -63,10 +76,13 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
 
   private Map<String, String> paths = new HashMap<>();
 
-  private Map<String, Class<?>> responseBodyClasses = new HashMap<>();
+  private Map<String, Class> responseBodyClasses = new HashMap<>();
+
+  private ApiClientProperties.ApiClientConfigProperties properties;
 
   @Override
   public void afterPropertiesSet() throws Exception {
+    prepareProperties();
     prepareWebClient();
     prepareMethods();
     prepareHeaders();
@@ -77,35 +93,60 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
     prepareRequestBodyClasses();
     prepareRequestMethods();
     preparePaths();
+    prepareFallback();
+  }
+
+  private void prepareFallback() {
+    ApiClient annotation = type.getAnnotation(ApiClient.class);
+    if (annotation.fallback() != Void.class) {
+      fallback = applicationContext.getBean(annotation.fallback());
+    }
   }
 
   private void prepareWebClient() {
     ObjectMapper objectMapper = applicationContext.getBean(ObjectMapper.class);
+
     ExchangeStrategies strategies = ExchangeStrategies.builder().codecs(clientDefaultCodecsConfigurer -> {
       clientDefaultCodecsConfigurer.defaultCodecs().jackson2JsonEncoder(new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON));
       clientDefaultCodecsConfigurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON));
     }).build();
 
-    ApiClientProperties apiClientproperties = applicationContext.getBean(ApiClientProperties.class);
-    ApiClientProperties.ApiClientConfigProperties defaultProperties = apiClientproperties.getConfigs().get(ApiClientProperties.DEFAULT);
-    ApiClientProperties.ApiClientConfigProperties properties = apiClientproperties.getConfigs().get(name);
-    String url = getUrl(defaultProperties, properties);
+    TcpClient tcpClient = TcpClient.create()
+      .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) properties.getConnectTimeout().toMillis())
+      .doOnConnected(connection -> connection
+        .addHandlerLast(new ReadTimeoutHandler(properties.getReadTimeout().toMillis(), TimeUnit.MILLISECONDS))
+        .addHandlerLast(new WriteTimeoutHandler(properties.getWriteTimeout().toMillis(), TimeUnit.MILLISECONDS))
+      );
 
-    WebClient.Builder builder = WebClient.builder().exchangeStrategies(strategies).baseUrl(url);
-    builder = configureProperties(builder, defaultProperties);
-    builder = configureProperties(builder, properties);
-    webClient = builder.build();
+    webClient = WebClient.builder()
+      .exchangeStrategies(strategies)
+      .baseUrl(properties.getUrl())
+      .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
+      .defaultHeaders(httpHeaders -> properties.getHeaders().forEach(httpHeaders::add))
+      .filters(exchangeFilterFunctions ->
+        properties.getInterceptors().forEach(interceptorClass ->
+          exchangeFilterFunctions.add((ApiClientInterceptor) applicationContext.getBean(interceptorClass))
+        )
+      )
+      .build();
   }
 
-  private String getUrl(ApiClientProperties.ApiClientConfigProperties defaultProperties, ApiClientProperties.ApiClientConfigProperties properties) {
-    String url = null;
-    if (defaultProperties != null) {
-      url = defaultProperties.getUrl();
-    }
-    if (properties != null) {
-      url = properties.getUrl();
-    }
-    return url;
+  private void prepareProperties() {
+    ApiClientProperties apiClientproperties = applicationContext.getBean(ApiClientProperties.class);
+    properties = mergeApiClientConfigProperties(
+      apiClientproperties.getConfigs().get(ApiClientProperties.DEFAULT),
+      apiClientproperties.getConfigs().get(name)
+    );
+  }
+
+  private ApiClientProperties.ApiClientConfigProperties mergeApiClientConfigProperties(ApiClientProperties.ApiClientConfigProperties defaultProperties,
+                                                                                       ApiClientProperties.ApiClientConfigProperties properties) {
+    ApiClientProperties.ApiClientConfigProperties configProperties = new ApiClientProperties.ApiClientConfigProperties();
+
+    PropertiesHelper.copyConfigProperties(defaultProperties, configProperties);
+    PropertiesHelper.copyConfigProperties(properties, configProperties);
+
+    return configProperties;
   }
 
   private void prepareMethods() {
@@ -272,75 +313,15 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
     });
   }
 
-  private WebClient.Builder configureProperties(WebClient.Builder builder,
-                                                ApiClientProperties.ApiClientConfigProperties configProperties) {
-    return Optional.ofNullable(configProperties)
-      .map(properties -> doConfigureProperties(builder, properties))
-      .orElse(builder);
-  }
-
-  private WebClient.Builder doConfigureProperties(WebClient.Builder builder,
-                                                  ApiClientProperties.ApiClientConfigProperties properties) {
-    return builder
-      .defaultHeaders(httpHeaders ->
-        properties.getHeaders().forEach(httpHeaders::add)
-      )
-      .filters(exchangeFilterFunctions ->
-        properties.getInterceptors().forEach(interceptorClass ->
-          exchangeFilterFunctions.add((ApiClientInterceptor) applicationContext.getBean(interceptorClass))
-        )
-      );
-  }
-
   @Override
   public Object invoke(MethodInvocation invocation) throws Throwable {
-    return Mono.<Object>fromCallable(() -> webClient)
+    return Mono.fromCallable(() -> webClient)
       .map(client -> doMethod(invocation))
       .map(client -> client.uri(uriBuilder -> getUri(uriBuilder, invocation)))
       .map(client -> doHeader(client, invocation))
       .map(client -> doBody(client, invocation))
-      .flatMap(client -> client.retrieve()
-        .bodyToMono(responseBodyClasses.get(invocation.getMethod().getName()))
-      );
-  }
-
-  private WebClient.RequestHeadersSpec<?> doBody(WebClient.RequestHeadersSpec<?> client, MethodInvocation invocation) {
-    if (client instanceof WebClient.RequestBodySpec) {
-      Integer bodyPosition = requestBodyPositions.get(invocation.getMethod().getName());
-      WebClient.RequestBodySpec bodySpec = (WebClient.RequestBodySpec) client;
-      if (bodyPosition != null) {
-        Object body = invocation.getArguments()[bodyPosition];
-        return bodySpec.body(Mono.fromCallable(() -> body), body.getClass());
-      }
-    }
-    return client;
-  }
-
-  private WebClient.RequestHeadersSpec<?> doHeader(WebClient.RequestHeadersSpec<?> spec, MethodInvocation invocation) {
-    headers.get(invocation.getMethod().getName()).forEach((key, values) -> {
-      spec.headers(httpHeaders -> httpHeaders.addAll(key, values));
-    });
-
-    headerParamPositions.get(invocation.getMethod().getName()).forEach((key, position) -> {
-      spec.headers(httpHeaders -> httpHeaders.add(key, String.valueOf(invocation.getArguments()[position])));
-    });
-
-    return spec;
-  }
-
-  private URI getUri(UriBuilder builder, MethodInvocation invocation) {
-    builder.path(paths.get(invocation.getMethod().getName()));
-
-    queryParamPositions.get(invocation.getMethod().getName()).forEach((paramName, position) -> {
-      builder.queryParam(paramName, invocation.getArguments()[position]);
-    });
-
-    Map<String, Object> uriVariables = new HashMap<>();
-    pathVariablePositions.get(invocation.getMethod().getName()).forEach((paramName, position) -> {
-      uriVariables.put(paramName, invocation.getArguments()[position]);
-    });
-
-    return builder.build(uriVariables);
+      .flatMap(client -> client.retrieve().bodyToMono(responseBodyClasses.get(invocation.getMethod().getName())))
+      .onErrorResume(throwable -> doFallback((Throwable) throwable, invocation));
   }
 
   private WebClient.RequestHeadersUriSpec<?> doMethod(MethodInvocation invocation) {
@@ -361,6 +342,53 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
       return webClient.head();
     } else {
       return webClient.get();
+    }
+  }
+
+  private URI getUri(UriBuilder builder, MethodInvocation invocation) {
+    builder.path(paths.get(invocation.getMethod().getName()));
+
+    queryParamPositions.get(invocation.getMethod().getName()).forEach((paramName, position) -> {
+      builder.queryParam(paramName, invocation.getArguments()[position]);
+    });
+
+    Map<String, Object> uriVariables = new HashMap<>();
+    pathVariablePositions.get(invocation.getMethod().getName()).forEach((paramName, position) -> {
+      uriVariables.put(paramName, invocation.getArguments()[position]);
+    });
+
+    return builder.build(uriVariables);
+  }
+
+  private WebClient.RequestHeadersSpec<?> doHeader(WebClient.RequestHeadersSpec<?> spec, MethodInvocation invocation) {
+    headers.get(invocation.getMethod().getName()).forEach((key, values) -> {
+      spec.headers(httpHeaders -> httpHeaders.addAll(key, values));
+    });
+
+    headerParamPositions.get(invocation.getMethod().getName()).forEach((key, position) -> {
+      spec.headers(httpHeaders -> httpHeaders.add(key, String.valueOf(invocation.getArguments()[position])));
+    });
+
+    return spec;
+  }
+
+  private WebClient.RequestHeadersSpec<?> doBody(WebClient.RequestHeadersSpec<?> client, MethodInvocation invocation) {
+    if (client instanceof WebClient.RequestBodySpec) {
+      Integer bodyPosition = requestBodyPositions.get(invocation.getMethod().getName());
+      WebClient.RequestBodySpec bodySpec = (WebClient.RequestBodySpec) client;
+      if (bodyPosition != null) {
+        Object body = invocation.getArguments()[bodyPosition];
+        return bodySpec.body(Mono.fromCallable(() -> body), body.getClass());
+      }
+    }
+    return client;
+  }
+
+  private Mono doFallback(Throwable throwable, MethodInvocation invocation) {
+    if (Objects.nonNull(fallback)) {
+      return (Mono) ReflectionUtils.invokeMethod(invocation.getMethod(), fallback, invocation.getArguments());
+    } else {
+      return Mono.error(throwable);
     }
   }
 }

@@ -10,12 +10,13 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @ApiClient(
-  name = "hookbinClient"
+  name = "hookbinClient",
+  fallback = HookbinClientFallback.class
 )
 public interface HookbinClient {
 
   @RequestMapping(
-    path = "/QJbWLMj9EOCZ7jrRNjyX",
+    path = "/QJbWLMj9EOCZ7jrRNjyX-notfound",
     method = RequestMethod.POST,
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE
@@ -23,7 +24,7 @@ public interface HookbinClient {
   Mono<HookbinResponse> first(@RequestBody FirstModel model);
 
   @RequestMapping(
-    path = "/VGOwBYJ8G2SX9Lm3gLZ6",
+    path = "/VGOwBYJ8G2SX9Lm3gLZ6-notfound",
     method = RequestMethod.GET,
     produces = MediaType.APPLICATION_JSON_VALUE,
     consumes = MediaType.APPLICATION_JSON_VALUE
