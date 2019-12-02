@@ -1,8 +1,8 @@
-package com.blibli.oss.webclient.configuration;
+package com.blibli.oss.apiclient.configuration;
 
-import com.blibli.oss.webclient.annotation.ApiClient;
-import com.blibli.oss.webclient.annotation.EnableApiClient;
-import com.blibli.oss.webclient.bean.ApiClientMethodInterceptor;
+import com.blibli.oss.apiclient.annotation.ApiClient;
+import com.blibli.oss.apiclient.annotation.EnableApiClient;
+import com.blibli.oss.apiclient.aop.ApiClientMethodInterceptor;
 import lombok.Setter;
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.beans.factory.BeanCreationException;

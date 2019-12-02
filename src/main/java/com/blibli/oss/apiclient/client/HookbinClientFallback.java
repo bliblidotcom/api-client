@@ -1,4 +1,4 @@
-package com.blibli.oss.webclient.client;
+package com.blibli.oss.apiclient.client;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

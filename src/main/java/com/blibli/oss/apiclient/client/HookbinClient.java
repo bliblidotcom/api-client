@@ -1,6 +1,6 @@
-package com.blibli.oss.webclient.client;
+package com.blibli.oss.apiclient.client;
 
-import com.blibli.oss.webclient.annotation.ApiClient;
+import com.blibli.oss.apiclient.annotation.ApiClient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

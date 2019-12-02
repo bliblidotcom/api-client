@@ -1,4 +1,4 @@
-package com.blibli.oss.webclient.annotation;
+package com.blibli.oss.apiclient.annotation;
 
 import java.lang.annotation.*;
 

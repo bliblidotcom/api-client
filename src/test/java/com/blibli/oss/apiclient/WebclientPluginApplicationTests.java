@@ -1,4 +1,4 @@
-package com.blibli.oss.webclient;
+package com.blibli.oss.apiclient;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

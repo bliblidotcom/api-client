@@ -1,4 +1,4 @@
-package com.blibli.oss.webclient.interceptor;
+package com.blibli.oss.apiclient.interceptor;
 
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 

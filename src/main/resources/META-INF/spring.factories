@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.blibli.oss.webclient.configuration.ApiClientConfiguration
+com.blibli.oss.apiclient.configuration.ApiClientConfiguration

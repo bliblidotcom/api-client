@@ -1,6 +1,6 @@
-package com.blibli.oss.webclient.configuration;
+package com.blibli.oss.apiclient.configuration;
 
-import com.blibli.oss.webclient.properties.ApiClientProperties;
+import com.blibli.oss.apiclient.properties.ApiClientProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

@@ -1,4 +1,4 @@
-package com.blibli.oss.webclient.properties;
+package com.blibli.oss.apiclient.properties;
 
 import java.util.Objects;
 

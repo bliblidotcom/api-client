@@ -1,9 +1,9 @@
-package com.blibli.oss.webclient.bean;
+package com.blibli.oss.apiclient.aop;
 
-import com.blibli.oss.webclient.annotation.ApiClient;
-import com.blibli.oss.webclient.interceptor.ApiClientInterceptor;
-import com.blibli.oss.webclient.properties.ApiClientProperties;
-import com.blibli.oss.webclient.properties.PropertiesHelper;
+import com.blibli.oss.apiclient.annotation.ApiClient;
+import com.blibli.oss.apiclient.interceptor.ApiClientInterceptor;
+import com.blibli.oss.apiclient.properties.ApiClientProperties;
+import com.blibli.oss.apiclient.properties.PropertiesHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;

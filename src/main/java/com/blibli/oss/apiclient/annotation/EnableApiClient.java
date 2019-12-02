@@ -1,6 +1,6 @@
-package com.blibli.oss.webclient.annotation;
+package com.blibli.oss.apiclient.annotation;
 
-import com.blibli.oss.webclient.configuration.ApiClientRegistrar;
+import com.blibli.oss.apiclient.configuration.ApiClientRegistrar;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;

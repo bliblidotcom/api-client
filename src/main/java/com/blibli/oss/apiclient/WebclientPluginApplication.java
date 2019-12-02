@@ -1,8 +1,8 @@
-package com.blibli.oss.webclient;
+package com.blibli.oss.apiclient;
 
-import com.blibli.oss.webclient.annotation.EnableApiClient;
-import com.blibli.oss.webclient.client.ExampleClient;
-import com.blibli.oss.webclient.client.HookbinClient;
+import com.blibli.oss.apiclient.annotation.EnableApiClient;
+import com.blibli.oss.apiclient.client.ExampleClient;
+import com.blibli.oss.apiclient.client.HookbinClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
