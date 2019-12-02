@@ -34,12 +34,12 @@ public class RequestMappingMetadata {
 
   private Map<String, Map<String, Integer>> pathVariablePositions = new HashMap<>();
 
-  private Map<String, Integer> requestBodyPositions = new HashMap<>();
-
   private Map<String, RequestMethod> requestMethods = new HashMap<>();
 
   private Map<String, String> paths = new HashMap<>();
 
   private Map<String, Class> responseBodyClasses = new HashMap<>();
+
+  private Map<String, String> contentTypes = new HashMap<>();
 
 }

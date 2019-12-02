@@ -1,6 +1,7 @@
 package com.blibli.oss.apiclient.aop;
 
 import com.blibli.oss.apiclient.annotation.ApiClient;
+import com.blibli.oss.apiclient.body.ApiBodyResolver;
 import com.blibli.oss.apiclient.interceptor.ApiClientInterceptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelOption;
@@ -15,11 +16,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ClientHttpRequest;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
 import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
@@ -29,9 +32,7 @@ import reactor.netty.tcp.TcpClient;
 
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -49,6 +50,8 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
   @Setter
   private AnnotationMetadata annotationMetadata;
 
+  private List<ApiBodyResolver> bodyResolvers;
+
   private WebClient webClient;
 
   private Object fallback;
@@ -60,18 +63,12 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
     prepareAttribute();
     prepareWebClient();
     prepareFallback();
+    prepareBodyResolvers();
   }
 
   private void prepareAttribute() {
     metadata = new RequestMappingMetadataBuilder(applicationContext, type, name, annotationMetadata)
       .build();
-  }
-
-  private void prepareFallback() {
-    ApiClient annotation = type.getAnnotation(ApiClient.class);
-    if (annotation.fallback() != Void.class) {
-      fallback = applicationContext.getBean(annotation.fallback());
-    }
   }
 
   private void prepareWebClient() {
@@ -102,6 +99,17 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
       .build();
   }
 
+  private void prepareFallback() {
+    ApiClient annotation = type.getAnnotation(ApiClient.class);
+    if (annotation.fallback() != Void.class) {
+      fallback = applicationContext.getBean(annotation.fallback());
+    }
+  }
+
+  private void prepareBodyResolvers() {
+    bodyResolvers = new ArrayList<>(applicationContext.getBeansOfType(ApiBodyResolver.class).values());
+  }
+
   @Override
   public Object invoke(MethodInvocation invocation) throws Throwable {
     Method method = invocation.getMethod();
@@ -112,7 +120,7 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
       .map(client -> doMethod(methodName))
       .map(client -> client.uri(uriBuilder -> getUri(uriBuilder, methodName, arguments)))
       .map(client -> doHeader(client, methodName, arguments))
-      .map(client -> doBody(client, methodName, arguments))
+      .map(client -> doBody(client, method, methodName, arguments))
       .flatMap(client -> doResponse(client, methodName))
       .onErrorResume(throwable -> doFallback((Throwable) throwable, method, arguments));
   }
@@ -169,13 +177,21 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
     return spec;
   }
 
-  private WebClient.RequestHeadersSpec<?> doBody(WebClient.RequestHeadersSpec<?> client, String methodName, Object[] arguments) {
+  private WebClient.RequestHeadersSpec<?> doBody(WebClient.RequestHeadersSpec<?> client, Method method, String methodName, Object[] arguments) {
     if (client instanceof WebClient.RequestBodySpec) {
-      Integer bodyPosition = metadata.getRequestBodyPositions().get(methodName);
       WebClient.RequestBodySpec bodySpec = (WebClient.RequestBodySpec) client;
-      if (bodyPosition != null) {
-        Object body = arguments[bodyPosition];
-        return bodySpec.body(Mono.fromCallable(() -> body), body.getClass());
+
+      String contentType = metadata.getContentTypes().get(methodName);
+      BodyInserter<?, ? super ClientHttpRequest> body = null;
+
+      for (ApiBodyResolver bodyResolver : bodyResolvers) {
+        if (bodyResolver.canResolve(contentType)) {
+          body = bodyResolver.resolve(method, arguments);
+        }
+      }
+
+      if (body != null) {
+        return bodySpec.body((BodyInserter<?, ? super ClientHttpRequest>) body);
       }
     }
     return client;

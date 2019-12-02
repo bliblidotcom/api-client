@@ -37,13 +37,13 @@ public class RequestMappingMetadataBuilder {
 
   private Map<String, Map<String, Integer>> pathVariablePositions = new HashMap<>();
 
-  private Map<String, Integer> requestBodyPositions = new HashMap<>();
-
   private Map<String, RequestMethod> requestMethods = new HashMap<>();
 
   private Map<String, String> paths = new HashMap<>();
 
   private Map<String, Class> responseBodyClasses = new HashMap<>();
+
+  private Map<String, String> contentTypes = new HashMap<>();
 
   private ApplicationContext applicationContext;
 
@@ -106,19 +106,6 @@ public class RequestMappingMetadataBuilder {
           requestMethods.put(methodName, methods[0]);
         } else {
           requestMethods.put(methodName, RequestMethod.GET);
-        }
-      }
-    });
-  }
-
-  private void prepareRequestBodies() {
-    methods.forEach((methodName, method) -> {
-      Parameter[] parameters = method.getParameters();
-      for (int i = 0; i < parameters.length; i++) {
-        Parameter parameter = parameters[i];
-        RequestBody requestBody = parameter.getAnnotation(RequestBody.class);
-        if (requestBody != null) {
-          requestBodyPositions.put(methodName, i);
         }
       }
     });
@@ -266,6 +253,31 @@ public class RequestMappingMetadataBuilder {
     });
   }
 
+  private void prepareContentTypes() {
+    String defaultContentType = getDefaultContentType();
+    methods.forEach((methodName, method) -> {
+      RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
+      if (requestMapping != null) {
+        String[] consumes = requestMapping.consumes();
+        if (consumes.length > 0) {
+          contentTypes.put(methodName, consumes[0]);
+        } else {
+          contentTypes.put(methodName, defaultContentType);
+        }
+      }
+    });
+  }
+
+  private String getDefaultContentType() {
+    String defaultContentType = null;
+    for (Map.Entry<String, String> entry : properties.getHeaders().entrySet()) {
+      if (HttpHeaders.CONTENT_TYPE.equals(entry.getKey())) {
+        defaultContentType = entry.getValue();
+      }
+    }
+    return defaultContentType;
+  }
+
   public RequestMappingMetadata build() {
     prepareProperties();
     prepareMethods();
@@ -273,11 +285,11 @@ public class RequestMappingMetadataBuilder {
     prepareQueryParams();
     prepareHeaderParams();
     preparePathVariables();
-    prepareRequestBodies();
     prepareRequestBodyClasses();
     prepareRequestMethods();
     preparePaths();
     prepareCookieParams();
+    prepareContentTypes();
 
     return RequestMappingMetadata.builder()
       .properties(properties)
@@ -286,11 +298,11 @@ public class RequestMappingMetadataBuilder {
       .headers(headers)
       .queryParamPositions(queryParamPositions)
       .pathVariablePositions(pathVariablePositions)
-      .requestBodyPositions(requestBodyPositions)
       .responseBodyClasses(responseBodyClasses)
       .requestMethods(requestMethods)
       .paths(paths)
       .cookieParamPositions(cookieParamPositions)
+      .contentTypes(contentTypes)
       .build();
   }
 
