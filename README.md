@@ -25,3 +25,12 @@ api.client.configs.exampleClient.read-timeout=5s
 api.client.configs.exampleClient.write-timeout=5s
 api.client.configs.exampleClient.connect-timeout=5s
 ```
+
+## Supported Annotation
+
+- @RequestMapping
+- @RequestBody
+- @RequestParam
+- @RequestHeader
+- @PathVariable
+- @CookieValue

@@ -13,6 +13,7 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
@@ -26,6 +27,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +46,9 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
   @Setter
   private String name;
 
+  @Setter
+  private AnnotationMetadata annotationMetadata;
+
   private WebClient webClient;
 
   private Object fallback;
@@ -58,7 +63,7 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
   }
 
   private void prepareAttribute() {
-    metadata = new RequestMappingMetadataBuilder(applicationContext, type, name)
+    metadata = new RequestMappingMetadataBuilder(applicationContext, type, name, annotationMetadata)
       .build();
   }
 
@@ -99,17 +104,21 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
 
   @Override
   public Object invoke(MethodInvocation invocation) throws Throwable {
+    Method method = invocation.getMethod();
+    String methodName = method.toString();
+    Object[] arguments = invocation.getArguments();
+
     return Mono.fromCallable(() -> webClient)
-      .map(client -> doMethod(invocation))
-      .map(client -> client.uri(uriBuilder -> getUri(uriBuilder, invocation)))
-      .map(client -> doHeader(client, invocation))
-      .map(client -> doBody(client, invocation))
-      .flatMap(client -> client.retrieve().bodyToMono(metadata.getResponseBodyClasses().get(invocation.getMethod().getName())))
-      .onErrorResume(throwable -> doFallback((Throwable) throwable, invocation));
+      .map(client -> doMethod(methodName))
+      .map(client -> client.uri(uriBuilder -> getUri(uriBuilder, methodName, arguments)))
+      .map(client -> doHeader(client, methodName, arguments))
+      .map(client -> doBody(client, methodName, arguments))
+      .flatMap(client -> doResponse(client, methodName))
+      .onErrorResume(throwable -> doFallback((Throwable) throwable, method, arguments));
   }
 
-  private WebClient.RequestHeadersUriSpec<?> doMethod(MethodInvocation invocation) {
-    RequestMethod method = metadata.getRequestMethods().get(invocation.getMethod().getName());
+  private WebClient.RequestHeadersUriSpec<?> doMethod(String methodName) {
+    RequestMethod method = metadata.getRequestMethods().get(methodName);
     if (method.equals(RequestMethod.GET)) {
       return webClient.get();
     } else if (method.equals(RequestMethod.POST)) {
@@ -129,52 +138,59 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
     }
   }
 
-  private URI getUri(UriBuilder builder, MethodInvocation invocation) {
-    builder.path(metadata.getPaths().get(invocation.getMethod().getName()));
+  private URI getUri(UriBuilder builder, String methodName, Object[] arguments) {
+    builder.path(metadata.getPaths().get(methodName));
 
-    metadata.getQueryParamPositions().get(invocation.getMethod().getName()).forEach((paramName, position) -> {
-      builder.queryParam(paramName, invocation.getArguments()[position]);
+    metadata.getQueryParamPositions().get(methodName).forEach((paramName, position) -> {
+      builder.queryParam(paramName, arguments[position]);
     });
 
     Map<String, Object> uriVariables = new HashMap<>();
-    metadata.getPathVariablePositions().get(invocation.getMethod().getName()).forEach((paramName, position) -> {
-      uriVariables.put(paramName, invocation.getArguments()[position]);
+    metadata.getPathVariablePositions().get(methodName).forEach((paramName, position) -> {
+      uriVariables.put(paramName, arguments[position]);
     });
 
     return builder.build(uriVariables);
   }
 
-  private WebClient.RequestHeadersSpec<?> doHeader(WebClient.RequestHeadersSpec<?> spec, MethodInvocation invocation) {
-    metadata.getHeaders().get(invocation.getMethod().getName()).forEach((key, values) -> {
+  private WebClient.RequestHeadersSpec<?> doHeader(WebClient.RequestHeadersSpec<?> spec, String methodName, Object[] arguments) {
+    metadata.getHeaders().get(methodName).forEach((key, values) -> {
       spec.headers(httpHeaders -> httpHeaders.addAll(key, values));
     });
 
-    metadata.getHeaderParamPositions().get(invocation.getMethod().getName()).forEach((key, position) -> {
-      spec.headers(httpHeaders -> httpHeaders.add(key, String.valueOf(invocation.getArguments()[position])));
+    metadata.getHeaderParamPositions().get(methodName).forEach((key, position) -> {
+      spec.headers(httpHeaders -> httpHeaders.add(key, String.valueOf(arguments[position])));
     });
 
-    metadata.getCookieParamPositions().get(invocation.getMethod().getName()).forEach((key, position) -> {
-      spec.cookies(cookies -> cookies.add(key, String.valueOf(invocation.getArguments()[position])));
+    metadata.getCookieParamPositions().get(methodName).forEach((key, position) -> {
+      spec.cookies(cookies -> cookies.add(key, String.valueOf(arguments[position])));
     });
 
     return spec;
   }
 
-  private WebClient.RequestHeadersSpec<?> doBody(WebClient.RequestHeadersSpec<?> client, MethodInvocation invocation) {
+  private WebClient.RequestHeadersSpec<?> doBody(WebClient.RequestHeadersSpec<?> client, String methodName, Object[] arguments) {
     if (client instanceof WebClient.RequestBodySpec) {
-      Integer bodyPosition = metadata.getRequestBodyPositions().get(invocation.getMethod().getName());
+      Integer bodyPosition = metadata.getRequestBodyPositions().get(methodName);
       WebClient.RequestBodySpec bodySpec = (WebClient.RequestBodySpec) client;
       if (bodyPosition != null) {
-        Object body = invocation.getArguments()[bodyPosition];
+        Object body = arguments[bodyPosition];
         return bodySpec.body(Mono.fromCallable(() -> body), body.getClass());
       }
     }
     return client;
   }
 
-  private Mono doFallback(Throwable throwable, MethodInvocation invocation) {
+  @SuppressWarnings("unchecked")
+  private Mono doResponse(WebClient.RequestHeadersSpec<?> client, String methodName) {
+    return client.retrieve()
+      .bodyToMono(metadata.getResponseBodyClasses().get(methodName));
+  }
+
+  private Mono doFallback(Throwable throwable, Method method, Object[] arguments) {
     if (Objects.nonNull(fallback)) {
-      return (Mono) ReflectionUtils.invokeMethod(invocation.getMethod(), fallback, invocation.getArguments());
+      log.error(throwable.getMessage(), throwable);
+      return (Mono) ReflectionUtils.invokeMethod(method, fallback, arguments);
     } else {
       return Mono.error(throwable);
     }

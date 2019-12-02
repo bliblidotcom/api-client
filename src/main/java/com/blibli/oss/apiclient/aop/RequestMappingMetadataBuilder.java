@@ -4,6 +4,7 @@ import com.blibli.oss.apiclient.properties.ApiClientProperties;
 import com.blibli.oss.apiclient.properties.PropertiesHelper;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.ReflectionUtils;
@@ -50,10 +51,13 @@ public class RequestMappingMetadataBuilder {
 
   private String name;
 
-  public RequestMappingMetadataBuilder(ApplicationContext applicationContext, Class<?> type, String name) {
+  private AnnotationMetadata annotationMetadata;
+
+  public RequestMappingMetadataBuilder(ApplicationContext applicationContext, Class<?> type, String name, AnnotationMetadata annotationMetadata) {
     this.applicationContext = applicationContext;
     this.type = type;
     this.name = name;
+    this.annotationMetadata = annotationMetadata;
   }
 
   private void prepareProperties() {
@@ -76,7 +80,7 @@ public class RequestMappingMetadataBuilder {
 
   private void prepareMethods() {
     methods = Arrays.stream(ReflectionUtils.getDeclaredMethods(type))
-      .collect(Collectors.toMap(Method::getName, method -> method));
+      .collect(Collectors.toMap(Method::toString, method -> method));
   }
 
   private void preparePaths() {

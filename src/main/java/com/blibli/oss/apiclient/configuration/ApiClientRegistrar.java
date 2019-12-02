@@ -72,6 +72,7 @@ public class ApiClientRegistrar implements ImportBeanDefinitionRegistrar, Resour
     String aliasName = name + METHOD_INTERCEPTOR;
 
     BeanDefinitionBuilder definition = BeanDefinitionBuilder.genericBeanDefinition(ApiClientMethodInterceptor.class);
+    definition.addPropertyValue("annotationMetadata", annotationMetadata);
     try {
       definition.addPropertyValue("type", Class.forName(annotationMetadata.getClassName()));
     } catch (ClassNotFoundException e) {
