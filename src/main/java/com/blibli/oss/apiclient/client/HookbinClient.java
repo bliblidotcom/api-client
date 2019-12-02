@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -16,18 +15,14 @@ import reactor.core.publisher.Mono;
 public interface HookbinClient {
 
   @RequestMapping(
-    path = "/QJbWLMj9EOCZ7jrRNjyX-notfound",
-    method = RequestMethod.POST,
-    produces = MediaType.APPLICATION_JSON_VALUE,
-    consumes = MediaType.APPLICATION_JSON_VALUE
+    path = "/QJbWLMj9EOCZ7jrRNjyX",
+    method = RequestMethod.POST
   )
   Mono<HookbinResponse> first(@RequestBody FirstModel model);
 
   @RequestMapping(
-    path = "/VGOwBYJ8G2SX9Lm3gLZ6-notfound",
-    method = RequestMethod.GET,
-    produces = MediaType.APPLICATION_JSON_VALUE,
-    consumes = MediaType.APPLICATION_JSON_VALUE
+    path = "/VGOwBYJ8G2SX9Lm3gLZ6",
+    method = RequestMethod.GET
   )
   Mono<HookbinResponse> second(@RequestParam("firstName") String firstName,
                                @RequestHeader("lastName") String lastName);
