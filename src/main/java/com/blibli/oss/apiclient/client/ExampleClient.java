@@ -5,7 +5,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import reactor.core.publisher.Mono;
 
 @ApiClient(
-  name = "exampleClient"
+  name = "exampleClient",
+  fallback = ExampleClientFallback.class
 )
 public interface ExampleClient {
 

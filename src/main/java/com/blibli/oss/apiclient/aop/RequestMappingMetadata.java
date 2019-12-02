@@ -30,6 +30,8 @@ public class RequestMappingMetadata {
 
   private Map<String, Map<String, Integer>> headerParamPositions = new HashMap<>();
 
+  private Map<String, Map<String, Integer>> cookieParamPositions = new HashMap<>();
+
   private Map<String, Map<String, Integer>> pathVariablePositions = new HashMap<>();
 
   private Map<String, Integer> requestBodyPositions = new HashMap<>();

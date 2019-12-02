@@ -153,6 +153,10 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
       spec.headers(httpHeaders -> httpHeaders.add(key, String.valueOf(invocation.getArguments()[position])));
     });
 
+    metadata.getCookieParamPositions().get(invocation.getMethod().getName()).forEach((key, position) -> {
+      spec.cookies(cookies -> cookies.add(key, String.valueOf(invocation.getArguments()[position])));
+    });
+
     return spec;
   }
 

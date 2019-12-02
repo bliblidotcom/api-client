@@ -32,6 +32,8 @@ public class RequestMappingMetadataBuilder {
 
   private Map<String, Map<String, Integer>> headerParamPositions = new HashMap<>();
 
+  private Map<String, Map<String, Integer>> cookieParamPositions = new HashMap<>();
+
   private Map<String, Map<String, Integer>> pathVariablePositions = new HashMap<>();
 
   private Map<String, Integer> requestBodyPositions = new HashMap<>();
@@ -236,6 +238,30 @@ public class RequestMappingMetadataBuilder {
     });
   }
 
+  private void prepareCookieParams() {
+    methods.forEach((methodName, method) -> {
+      RequestMapping requestMapping = method.getAnnotation(RequestMapping.class);
+      if (requestMapping != null) {
+        Parameter[] parameters = method.getParameters();
+        Map<String, Integer> cookieParamPosition = new HashMap<>();
+        cookieParamPositions.put(methodName, cookieParamPosition);
+
+        if (parameters.length > 0) {
+          for (int i = 0; i < parameters.length; i++) {
+            Parameter parameter = parameters[i];
+            CookieValue annotation = parameter.getAnnotation(CookieValue.class);
+            if (annotation != null) {
+              String name = StringUtils.isEmpty(annotation.name()) ? annotation.value() : annotation.name();
+              if (!StringUtils.isEmpty(name)) {
+                cookieParamPosition.put(name, i);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
   public RequestMappingMetadata build() {
     prepareProperties();
     prepareMethods();
@@ -247,6 +273,7 @@ public class RequestMappingMetadataBuilder {
     prepareRequestBodyClasses();
     prepareRequestMethods();
     preparePaths();
+    prepareCookieParams();
 
     return RequestMappingMetadata.builder()
       .properties(properties)
@@ -259,6 +286,7 @@ public class RequestMappingMetadataBuilder {
       .responseBodyClasses(responseBodyClasses)
       .requestMethods(requestMethods)
       .paths(paths)
+      .cookieParamPositions(cookieParamPositions)
       .build();
   }
 
