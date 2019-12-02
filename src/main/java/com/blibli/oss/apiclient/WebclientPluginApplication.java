@@ -8,6 +8,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 @EnableApiClient
 @SpringBootApplication
@@ -31,15 +34,44 @@ public class WebclientPluginApplication {
       String response = exampleClient.get().block();
       System.out.println(response);
 
-      HookbinClient.HookbinResponse hookbinResponse = hookbinClient.first(HookbinClient.FirstModel.builder()
+      HookbinClient.HookbinResponse hookbinResponse = hookbinClient.send(HookbinClient.FirstModel.builder()
         .firstName("Eko")
         .lastName("Khannedy")
         .build()).block();
       System.out.println(hookbinResponse);
 
-      hookbinResponse = hookbinClient.second("Eko", "Khannedy").block();
+      hookbinResponse = hookbinClient.send("Eko", "Khannedy").block();
       System.out.println(hookbinResponse);
     }
+  }
+
+  @RestController
+  public class ClientController {
+
+    @Autowired
+    private ExampleClient exampleClient;
+
+    @Autowired
+    private HookbinClient hookbinClient;
+
+    @GetMapping("/example")
+    public Mono<String> example() {
+      return exampleClient.get();
+    }
+
+    @GetMapping("/hook1")
+    public Mono<HookbinClient.HookbinResponse> hook1() {
+      return hookbinClient.send(HookbinClient.FirstModel.builder()
+        .firstName("Eko")
+        .lastName("Kurniawan")
+        .build());
+    }
+
+    @GetMapping("/hook2")
+    public Mono<HookbinClient.HookbinResponse> hook2() {
+      return hookbinClient.send("Eko", "Khannedy");
+    }
+
   }
 
 }

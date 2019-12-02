@@ -18,14 +18,14 @@ public interface HookbinClient {
     path = "/QJbWLMj9EOCZ7jrRNjyX",
     method = RequestMethod.POST
   )
-  Mono<HookbinResponse> first(@RequestBody FirstModel model);
+  Mono<HookbinResponse> send(@RequestBody FirstModel model);
 
   @RequestMapping(
     path = "/VGOwBYJ8G2SX9Lm3gLZ6",
     method = RequestMethod.GET
   )
-  Mono<HookbinResponse> second(@RequestParam("firstName") String firstName,
-                               @RequestHeader("lastName") String lastName);
+  Mono<HookbinResponse> send(@RequestParam("firstName") String firstName,
+                             @RequestHeader("lastName") String lastName);
 
   @Data
   @Builder

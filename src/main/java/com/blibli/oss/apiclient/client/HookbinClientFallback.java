@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 public class HookbinClientFallback implements HookbinClient {
 
   @Override
-  public Mono<HookbinResponse> first(FirstModel model) {
+  public Mono<HookbinResponse> send(FirstModel model) {
     log.info("Receive fallback");
     return Mono.just(HookbinResponse.builder()
       .success(false)
@@ -17,7 +17,7 @@ public class HookbinClientFallback implements HookbinClient {
   }
 
   @Override
-  public Mono<HookbinResponse> second(String firstName, String lastName) {
+  public Mono<HookbinResponse> send(String firstName, String lastName) {
     log.info("Receive fallback");
     return Mono.just(HookbinResponse.builder()
       .success(false)
