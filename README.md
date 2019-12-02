@@ -34,3 +34,4 @@ api.client.configs.exampleClient.connect-timeout=5s
 - @RequestHeader
 - @PathVariable
 - @CookieValue
+- @RequestPart
