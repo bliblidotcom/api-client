@@ -5,6 +5,14 @@ Declarative API Client using Spring Web Client and Reactor Netty
 ## How to use It
 
 ```java
+@EnableApiClient
+@SpringBootApplication
+public class YourApplication {
+
+}
+```
+
+```java
 
 @ApiClient(
   name = "exampleClient"
