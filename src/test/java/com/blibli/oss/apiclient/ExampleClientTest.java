@@ -12,8 +12,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +35,9 @@ public class ExampleClientTest {
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  private ResourceLoader resourceLoader;
 
   @Autowired
   private ExampleClient exampleClient;
@@ -73,6 +80,85 @@ public class ExampleClientTest {
 
     SecondResponse response = exampleClient.second().block();
     assertEquals(SECOND_RESPONSE, response);
+  }
+
+  @Test
+  void testThird() throws JsonProcessingException {
+    wireMockServer.stubFor(
+      get(urlPathEqualTo("/third/eko"))
+        .withHeader(HttpHeaders.ACCEPT, equalTo(MediaType.APPLICATION_JSON_VALUE))
+        .willReturn(
+          aResponse()
+            .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .withBody(objectMapper.writeValueAsString(FIRST_RESPONSE))
+        )
+    );
+
+    FirstResponse response = exampleClient.third("eko").block();
+    assertEquals(FIRST_RESPONSE, response);
+  }
+
+  @Test
+  void testForth() throws JsonProcessingException {
+    wireMockServer.stubFor(
+      get(urlPathEqualTo("/forth/eko"))
+        .withQueryParam("page", equalTo("1"))
+        .withQueryParam("size", equalTo("100"))
+        .withHeader(HttpHeaders.ACCEPT, equalTo(MediaType.APPLICATION_JSON_VALUE))
+        .withHeader("X-API", equalTo("api"))
+        .willReturn(
+          aResponse()
+            .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .withBody(objectMapper.writeValueAsString(FIRST_RESPONSE))
+        )
+    );
+
+    FirstResponse response = exampleClient.forth("eko", 1, 100, "api").block();
+    assertEquals(FIRST_RESPONSE, response);
+  }
+
+  @Test
+  void testFifth() throws JsonProcessingException {
+    wireMockServer.stubFor(
+      post(urlPathEqualTo("/fifth"))
+        .withHeader(HttpHeaders.CONTENT_TYPE, containing(MediaType.APPLICATION_FORM_URLENCODED_VALUE))
+        .withHeader(HttpHeaders.ACCEPT, equalTo(MediaType.APPLICATION_JSON_VALUE))
+        .withRequestBody(containing("firstName"))
+        .withRequestBody(containing("lastName"))
+        .withRequestBody(containing("Eko"))
+        .withRequestBody(containing("Khannedy"))
+        .willReturn(
+          aResponse()
+            .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .withBody(objectMapper.writeValueAsString(FIRST_RESPONSE))
+        )
+    );
+
+    MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+    form.add("firstName", "Eko");
+    form.add("lastName", "Khannedy");
+
+    FirstResponse response = exampleClient.fifth(form).block();
+    assertEquals(FIRST_RESPONSE, response);
+  }
+
+  @Test
+  void testSixth() throws JsonProcessingException {
+    wireMockServer.stubFor(
+      post(urlPathEqualTo("/sixth"))
+        .withHeader(HttpHeaders.CONTENT_TYPE, containing(MediaType.MULTIPART_FORM_DATA_VALUE))
+        .withHeader(HttpHeaders.ACCEPT, equalTo(MediaType.APPLICATION_JSON_VALUE))
+        .withRequestBody(containing("file"))
+        .willReturn(
+          aResponse()
+            .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .withBody(objectMapper.writeValueAsString(FIRST_RESPONSE))
+        )
+    );
+
+    Resource resource = resourceLoader.getResource("classpath:/upload.txt");
+    FirstResponse response = exampleClient.sixth(resource).block();
+    assertEquals(FIRST_RESPONSE, response);
   }
 
   @AfterAll

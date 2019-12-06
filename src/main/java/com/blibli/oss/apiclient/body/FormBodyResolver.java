@@ -24,7 +24,7 @@ public class FormBodyResolver implements ApiBodyResolver {
       Parameter parameter = parameters[i];
       RequestBody requestBody = parameter.getAnnotation(RequestBody.class);
       if (requestBody != null) {
-        BodyInserters.fromFormData((MultiValueMap<String, String>) arguments[i]);
+        return BodyInserters.fromFormData((MultiValueMap<String, String>) arguments[i]);
       }
     }
     return null;
