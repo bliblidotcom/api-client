@@ -2,6 +2,28 @@
 
 Declarative API Client using Spring Web Client and Reactor Netty
 
+## Dependency
+
+```xml
+
+<dependencies>
+    <dependency>
+        <groupId>com.blibli.oss</groupId>
+        <artifactId>api-client</artifactId>
+        <version>${api-client.version}</version>
+    </dependency>
+</dependencies>
+
+<repository>
+  <snapshots>
+    <enabled>false</enabled>
+  </snapshots>
+  <id>bintray-bliblidotcom-maven</id>
+  <name>bintray</name>
+  <url>https://dl.bintray.com/bliblidotcom/maven</url>
+</repository>
+```
+
 ## How to use It
 
 ```java
