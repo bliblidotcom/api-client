@@ -11,6 +11,7 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -124,7 +125,11 @@ public class RequestMappingMetadataBuilder {
       }
 
       try {
-        responseBodyClasses.put(methodName, Class.forName(typeArguments[0].getTypeName()));
+        Type type = typeArguments[0];
+        String className = type.getClass().equals(ParameterizedTypeImpl.class) ? // Generic value check
+            ((ParameterizedTypeImpl) type).getRawType().getCanonicalName() :
+            type.getTypeName();
+        responseBodyClasses.put(methodName, Class.forName(className));
       } catch (ClassNotFoundException e) {
         throw new BeanCreationException(e.getMessage(), e);
       }

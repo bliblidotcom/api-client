@@ -3,6 +3,7 @@ package com.blibli.oss.apiclient;
 import com.blibli.oss.apiclient.client.ExampleClient;
 import com.blibli.oss.apiclient.client.model.FirstRequest;
 import com.blibli.oss.apiclient.client.model.FirstResponse;
+import com.blibli.oss.apiclient.client.model.GenericResponse;
 import com.blibli.oss.apiclient.client.model.SecondResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +20,9 @@ import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.util.Collections;
+import java.util.List;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,6 +34,9 @@ public class ExampleClientTest {
   public static final FirstResponse FIRST_RESPONSE = FirstResponse.builder()
     .hello("Hello Eko Kurniawan")
     .build();
+  public static final GenericResponse<String> GENERIC_RESPONSE = GenericResponse.<String>builder()
+      .value("Test Generics")
+      .build();
   public static final SecondResponse SECOND_RESPONSE = SecondResponse.builder().hello("Hello").build();
   private static WireMockServer wireMockServer;
 
@@ -159,6 +166,42 @@ public class ExampleClientTest {
     Resource resource = resourceLoader.getResource("classpath:/upload.txt");
     FirstResponse response = exampleClient.sixth(resource).block();
     assertEquals(FIRST_RESPONSE, response);
+  }
+
+  @Test
+  void testGenerics() throws JsonProcessingException {
+    wireMockServer.stubFor(
+      post(urlPathEqualTo("/generics"))
+        .withHeader(HttpHeaders.CONTENT_TYPE, containing(MediaType.APPLICATION_JSON_VALUE))
+        .withHeader(HttpHeaders.ACCEPT, equalTo(MediaType.APPLICATION_JSON_VALUE))
+        .withRequestBody(equalTo("testing"))
+        .willReturn(
+          aResponse()
+            .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .withBody(objectMapper.writeValueAsString(GENERIC_RESPONSE))
+        )
+    );
+
+    GenericResponse<String> response = exampleClient.generic("testing").block();
+    assertEquals(GENERIC_RESPONSE, response);
+  }
+
+  @Test
+  void testGenericsTwo() throws JsonProcessingException {
+    wireMockServer.stubFor(
+      post(urlPathEqualTo("/generics-two"))
+        .withHeader(HttpHeaders.CONTENT_TYPE, containing(MediaType.APPLICATION_JSON_VALUE))
+        .withHeader(HttpHeaders.ACCEPT, equalTo(MediaType.APPLICATION_JSON_VALUE))
+        .withRequestBody(equalTo("testing"))
+        .willReturn(
+          aResponse()
+            .withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .withBody(objectMapper.writeValueAsString(Collections.singletonList("testing")))
+      )
+    );
+
+    List<String> response = exampleClient.genericTwo("testing").block();
+    assertEquals(Collections.singletonList("testing"), response);
   }
 
   @AfterAll

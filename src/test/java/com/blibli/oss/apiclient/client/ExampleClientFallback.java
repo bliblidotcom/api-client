@@ -2,11 +2,15 @@ package com.blibli.oss.apiclient.client;
 
 import com.blibli.oss.apiclient.client.model.FirstRequest;
 import com.blibli.oss.apiclient.client.model.FirstResponse;
+import com.blibli.oss.apiclient.client.model.GenericResponse;
 import com.blibli.oss.apiclient.client.model.SecondResponse;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Mono;
+
+import java.util.Collections;
+import java.util.List;
 
 @Component
 public class ExampleClientFallback implements ExampleClient {
@@ -51,5 +55,17 @@ public class ExampleClientFallback implements ExampleClient {
     return Mono.just(FirstResponse.builder()
       .hello("Ups Sixth")
       .build());
+  }
+
+  @Override
+  public Mono<GenericResponse<String>> generic(String test) {
+    return Mono.just(GenericResponse.<String>builder()
+      .value("Ups Generic")
+      .build());
+  }
+
+  @Override
+  public Mono<List<String>> genericTwo(String test) {
+    return Mono.just(Collections.singletonList("Ups Generic Two"));
   }
 }
