@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.type.AnnotationMetadata;
@@ -50,6 +51,9 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
   @Setter
   private AnnotationMetadata annotationMetadata;
 
+  @Autowired
+  private ObjectMapper objectMapper;
+
   private List<ApiBodyResolver> bodyResolvers;
 
   private WebClient webClient;
@@ -67,7 +71,7 @@ public class ApiClientMethodInterceptor implements MethodInterceptor, Initializi
   }
 
   private void prepareAttribute() {
-    metadata = new RequestMappingMetadataBuilder(applicationContext, type, name, annotationMetadata)
+    metadata = new RequestMappingMetadataBuilder(applicationContext, type, name, annotationMetadata, objectMapper)
       .build();
   }
 
