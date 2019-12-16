@@ -3,12 +3,15 @@ package com.blibli.oss.apiclient.client;
 import com.blibli.oss.apiclient.annotation.ApiClient;
 import com.blibli.oss.apiclient.client.model.FirstRequest;
 import com.blibli.oss.apiclient.client.model.FirstResponse;
+import com.blibli.oss.apiclient.client.model.GenericResponse;
 import com.blibli.oss.apiclient.client.model.SecondResponse;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @ApiClient(
   name = "exampleClient",
@@ -63,5 +66,21 @@ public interface ExampleClient {
     consumes = MediaType.MULTIPART_FORM_DATA_VALUE
   )
   Mono<FirstResponse> sixth(@RequestPart("file") Resource file);
+
+  @RequestMapping(
+    method = RequestMethod.POST,
+    path = "/generics",
+    produces = MediaType.APPLICATION_JSON_VALUE,
+    consumes = MediaType.APPLICATION_JSON_VALUE
+  )
+  Mono<GenericResponse<String>> generic(@RequestBody String test);
+
+  @RequestMapping(
+    method = RequestMethod.POST,
+    path = "/generics-two",
+    produces = MediaType.APPLICATION_JSON_VALUE,
+    consumes = MediaType.APPLICATION_JSON_VALUE
+  )
+  Mono<List<String>> genericTwo(@RequestBody String test);
 
 }

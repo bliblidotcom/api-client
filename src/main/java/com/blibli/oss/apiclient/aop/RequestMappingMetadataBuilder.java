@@ -2,6 +2,7 @@ package com.blibli.oss.apiclient.aop;
 
 import com.blibli.oss.apiclient.properties.ApiClientProperties;
 import com.blibli.oss.apiclient.properties.PropertiesHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.type.AnnotationMetadata;
@@ -53,11 +54,18 @@ public class RequestMappingMetadataBuilder {
 
   private AnnotationMetadata annotationMetadata;
 
-  public RequestMappingMetadataBuilder(ApplicationContext applicationContext, Class<?> type, String name, AnnotationMetadata annotationMetadata) {
+  private ObjectMapper objectMapper;
+
+  public RequestMappingMetadataBuilder(ApplicationContext applicationContext,
+                                       Class<?> type,
+                                       String name,
+                                       AnnotationMetadata annotationMetadata,
+                                       ObjectMapper objectMapper) {
     this.applicationContext = applicationContext;
     this.type = type;
     this.name = name;
     this.annotationMetadata = annotationMetadata;
+    this.objectMapper = objectMapper;
   }
 
   private void prepareProperties() {
@@ -124,7 +132,9 @@ public class RequestMappingMetadataBuilder {
       }
 
       try {
-        responseBodyClasses.put(methodName, Class.forName(typeArguments[0].getTypeName()));
+        Type type = typeArguments[0];
+        String className = objectMapper.constructType(type).getRawClass().getCanonicalName();
+        responseBodyClasses.put(methodName, Class.forName(className));
       } catch (ClassNotFoundException e) {
         throw new BeanCreationException(e.getMessage(), e);
       }
